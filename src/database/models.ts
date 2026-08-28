@@ -1,6 +1,7 @@
 import { Role } from '../auth/roles.enum';
 
 export interface TenantModel { id: string; name: string; slug: string; createdAt: Date; }
+export interface StoreModel { id: string; tenantId: string; name: string; slug: string; createdAt: Date; }
 export interface UserModel { id: string; email: string; name: string; createdAt: Date; }
 export interface TenantMembershipModel { userId: string; tenantId: string; role: Role; active: boolean; }
 export interface StoreSettingsModel { id: string; tenantId: string; settings: Record<string, unknown>; }

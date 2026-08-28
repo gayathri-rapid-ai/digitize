@@ -5,8 +5,12 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { TenantGuard } from './guards/tenant.guard';
+import { StoreGuard } from './guards/store.guard';
 import { MembershipService } from './membership.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { UsersService } from './users.service';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [DatabaseModule,
@@ -15,7 +19,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  providers: [MembershipService, AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, TenantGuard],
-  exports: [AuthService, MembershipService, JwtAuthGuard, RolesGuard, TenantGuard],
+  controllers: [AuthController],
+  providers: [MembershipService, UsersService, AuthService, JwtStrategy, GoogleStrategy, JwtAuthGuard, RolesGuard, TenantGuard, StoreGuard],
+  exports: [AuthService, MembershipService, UsersService, JwtAuthGuard, RolesGuard, TenantGuard, StoreGuard],
 })
 export class AuthModule {}

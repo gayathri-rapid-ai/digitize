@@ -26,8 +26,8 @@ function contextFor(
   } as unknown as ExecutionContext;
 }
 
-const tenantAStaff: AuthenticatedUser = { id: 'user-1', tenantId: 'tenant-a', role: Role.STAFF };
-const tenantAAdmin: AuthenticatedUser = { id: 'user-2', tenantId: 'tenant-a', role: Role.ADMIN };
+const tenantAStaff: AuthenticatedUser = { id: 'user-1', bid: 'tenant-a', role: Role.STAFF };
+const tenantAAdmin: AuthenticatedUser = { id: 'user-2', bid: 'tenant-a', role: Role.ADMIN };
 
 describe('authorization guards', () => {
   const reflector = new Reflector();
@@ -57,13 +57,13 @@ describe('authorization guards', () => {
     it('rejects a cross-tenant URL even for an authenticated user', () => {
       const request = { user: tenantAStaff, params: { tenantId: 'tenant-b' } };
       expect(() => guard.canActivate(contextFor(ProtectedHandlers.prototype.tenantResource, request))).toThrow(
-        'Cross-tenant access is not allowed',
+        'Cross-business access is not allowed',
       );
     });
 
     it('rejects a tenant-scoped request without a tenant id', () => {
       expect(() => guard.canActivate(contextFor(ProtectedHandlers.prototype.tenantResource, { user: tenantAStaff }))).toThrow(
-        'Cross-tenant access is not allowed',
+        'Cross-business access is not allowed',
       );
     });
   });

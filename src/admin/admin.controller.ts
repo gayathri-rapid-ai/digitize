@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { StoreGuard } from '../auth/guards/store.guard';
 import { MembershipService } from '../auth/membership.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { TenantScoped } from '../auth/decorators/tenant-scoped.decorator';
@@ -21,8 +22,8 @@ const memberBody = {
 
 @ApiTags('Admin console')
 @ApiBearerAuth()
-@Controller('admin/tenants/:tenantId')
-@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Controller('admin/business/:bid/stores/:storeId')
+@UseGuards(JwtAuthGuard, TenantGuard, StoreGuard, RolesGuard)
 @TenantScoped()
 @Roles(Role.STAFF)
 export class AdminController {

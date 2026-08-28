@@ -31,6 +31,15 @@ export class MembershipService {
     );
   }
 
+  async findFirstActive(userId: string): Promise<TenantMembership | undefined> {
+    const [membership] = await this.database.query<TenantMembership>(
+      `SELECT user_id AS "userId", tenant_id AS "tenantId", role, active
+       FROM tenant_memberships WHERE user_id = $1 AND active = TRUE ORDER BY tenant_id LIMIT 1`,
+      [userId],
+    );
+    return membership;
+  }
+
   // Used by the OWNER-only staff-management endpoint.
   async upsert(membership: TenantMembership): Promise<void> {
     await this.database.query(

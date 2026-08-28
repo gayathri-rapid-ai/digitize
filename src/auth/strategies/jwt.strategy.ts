@@ -15,9 +15,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const membership = await this.memberships.findActive(payload.sub, payload.tenantId);
-    if (!membership) throw new UnauthorizedException('Tenant membership is no longer active');
+    const membership = await this.memberships.findActive(payload.sub, payload.bid);
+    if (!membership) throw new UnauthorizedException('Business membership is no longer active');
 
-    return { id: membership.userId, tenantId: membership.tenantId, role: membership.role };
+    return { id: membership.userId, bid: membership.tenantId, role: membership.role };
   }
 }

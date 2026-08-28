@@ -22,10 +22,11 @@ export class TenantGuard implements CanActivate {
     ]);
     if (!isTenantScoped) return true;
 
-    const request = context.switchToHttp().getRequest<TenantRequest>();
+    const request = context.switchToHttp().getRequest<TenantRequest & { params: Record<string, unknown> }>();
+    if (typeof request.params?.bid === 'string' && !request.params.tenantId) request.params.tenantId = request.params.bid;
     const requestedTenantId = this.getRequestedTenantId(request);
-    if (!request.user || !requestedTenantId || request.user.tenantId !== requestedTenantId) {
-      throw new ForbiddenException('Cross-tenant access is not allowed');
+    if (!request.user || !requestedTenantId || request.user.bid !== requestedTenantId) {
+      throw new ForbiddenException('Cross-business access is not allowed');
     }
     return true;
   }
