@@ -28,6 +28,18 @@ export class CatalogController {
     return this.database.query('SELECT o.id, o.name, o.position, COALESCE(json_agg(v.value ORDER BY v.position) FILTER (WHERE v.id IS NOT NULL), \'[]\') AS values FROM product_options o LEFT JOIN product_option_values v ON v.option_id = o.id WHERE o.id = $1 GROUP BY o.id', [optionId]);
   }
 
+  @Get('options') @ApiOperation({ summary: 'List product options and values' })
+  options(@Param('bid') bid: string, @Param('storeId') storeId: string, @Param('productId') productId: string) {
+    return this.database.query(`SELECT o.id, o.name, o.position,
+      COALESCE(json_agg(json_build_object('id', v.id, 'value', v.value, 'position', v.position) ORDER BY v.position)
+        FILTER (WHERE v.id IS NOT NULL), '[]') AS values
+      FROM product_options o
+      JOIN products p ON p.id = o.product_id
+      LEFT JOIN product_option_values v ON v.option_id = o.id
+      WHERE o.product_id = $1 AND p.tenant_id = $2 AND p.store_id = $3
+      GROUP BY o.id ORDER BY o.position, o.name`, [productId, bid, storeId]);
+  }
+
   @Post('variants') @Roles(Role.ADMIN) @ApiOperation({ summary: 'Create a SKU with price, stock, and selected option values' })
   @ApiBody({ schema: { type: 'object', required: ['price', 'optionValueIds'], properties: { sku: { type: 'string' }, price: { type: 'number' }, inventoryQuantity: { type: 'integer' }, optionValueIds: { type: 'array', items: { type: 'string', format: 'uuid' } } } } })
   createVariant(@Param('bid') bid: string, @Param('storeId') storeId: string, @Param('productId') productId: string, @Body() body: { sku?: string; price: number; inventoryQuantity?: number; optionValueIds: string[] }) {

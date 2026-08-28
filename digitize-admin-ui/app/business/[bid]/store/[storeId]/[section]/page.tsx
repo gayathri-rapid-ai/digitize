@@ -1,4 +1,17 @@
 'use client';
-import { use,useEffect,useState } from 'react'; import { Shell } from '../../../../../../components/shell'; import { api } from '../../../../../../lib/api';
-const resources:Record<string,string>={products:'products',inventory:'inventory',orders:'orders',customers:'customers',discounts:'discounts'};
-export default function ResourcePage({params}:{params:Promise<{bid:string;storeId:string;section:string}>}){const scope=use(params);const [items,setItems]=useState<Record<string,unknown>[]>([]);const path=resources[scope.section];useEffect(()=>{const token=localStorage.getItem('digitize_token');if(token&&path)api(`/admin/business/${scope.bid}/stores/${scope.storeId}/${path}`,token).then(setItems)},[scope,path]);return <Shell bid={scope.bid} storeId={scope.storeId}><h1>{scope.section[0].toUpperCase()+scope.section.slice(1)}</h1>{path?<table><thead><tr><th>ID</th><th>Details</th></tr></thead><tbody>{items.map(item=><tr key={String(item.id)}><td>{String(item.id).slice(0,8)}</td><td>{JSON.stringify(item)}</td></tr>)}</tbody></table>:<p className="muted">This section is ready for store settings controls.</p>}</Shell>}
+
+import { use } from 'react';
+import { Shell } from '../../../../../../components/shell';
+import { ResourceManager } from '../../../../../../components/resource-manager';
+import { AnalyticsPanel, SettingsPanel, TeamPanel } from '../../../../../../components/store-tools';
+
+const resources = new Set(['products', 'collections', 'inventory', 'orders', 'customers', 'discounts']);
+export default function ResourcePage({ params }: { params: Promise<{ bid: string; storeId: string; section: string }> }) {
+  const scope = use(params);
+  let content: React.ReactNode = <p className="notice">Unknown section.</p>;
+  if (resources.has(scope.section)) content = <ResourceManager {...scope} resource={scope.section as 'products' | 'collections' | 'inventory' | 'orders' | 'customers' | 'discounts'} />;
+  if (scope.section === 'settings') content = <SettingsPanel {...scope} />;
+  if (scope.section === 'team') content = <TeamPanel {...scope} />;
+  if (scope.section === 'analytics') content = <AnalyticsPanel {...scope} />;
+  return <Shell {...scope}>{content}</Shell>;
+}

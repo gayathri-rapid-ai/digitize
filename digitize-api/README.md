@@ -57,7 +57,8 @@ controller runs.
 
 The app uses hand-written models and parameterized `pg` queries—no ORM. Set
 `DATABASE_URL` (for an external database), or set the `POSTGRES_*` variables in
-`.env` for the local Docker database. Create the schema before starting the service:
+the root `.env` file for the local Docker database. Create the schema before
+starting the service:
 
 ```sh
 npm run db:migrate
@@ -75,19 +76,21 @@ npm run db:up
 npm start:dev
 ```
 
-## Docker deployment
+## Full-stack Docker deployment
 
-Copy `.env.example` to `.env`, set a long random `JWT_SECRET` and a strong
-`POSTGRES_PASSWORD`, then run:
+Docker configuration is maintained at the repository root so the API and admin
+UI run as one project. From the repository root, copy `.env.example` to `.env`,
+set a long random `JWT_SECRET` and a strong `POSTGRES_PASSWORD`, then run:
 
 ```sh
 ./scripts/deploy.sh
 ```
 
 The deployment creates a persistent PostgreSQL volume, waits for database health,
-applies the DDL migration, then starts the API. Swagger is available at
-`http://localhost:3000/api` (or the configured `APP_PORT`). Stop the stack with
-`docker compose down`; the database volume is preserved.
+applies the DDL migration, then starts HAProxy, the API, and admin UI. HAProxy
+serves both the admin UI and Swagger at `http://localhost:3000` and
+`http://localhost:3000/api` respectively (or the configured `APP_PORT`). Stop
+the stack with `docker compose down`; the database volume is preserved.
 
 ```sh
 npm install
