@@ -24,6 +24,7 @@ let StorefrontController = class StorefrontController {
     context() { return this.storefront.context(); }
     products() { return this.storefront.products(); }
     product(productId) { return this.storefront.product(productId); }
+    async media(id, response) { const blob = await this.storefront.media(id); response.type(blob.mimeType).send(blob.bytes); }
     register(body) { return this.storefront.register(body); }
     login(body) { return this.storefront.login(body); }
     me(token) { return this.storefront.account(token); }
@@ -49,6 +50,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], StorefrontController.prototype, "product", null);
+__decorate([
+    (0, common_1.Get)('media/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], StorefrontController.prototype, "media", null);
 __decorate([
     (0, common_1.Post)('customers/register'),
     (0, swagger_1.ApiBody)({ schema: { type: 'object', required: ['email', 'password', 'name'], properties: { email: { type: 'string' }, password: { type: 'string', minLength: 8 }, name: { type: 'string' } } } }),

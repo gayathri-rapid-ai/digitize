@@ -43,6 +43,7 @@ ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY digitize-admin-ui/package.json digitize-admin-ui/package-lock.json ./
 RUN npm ci
+COPY digitize-design-system /digitize-design-system
 COPY digitize-admin-ui ./
 RUN npm run build
 
@@ -52,6 +53,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY digitize-admin-ui/package.json digitize-admin-ui/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
+COPY digitize-admin-ui/next.runtime.config.mjs ./next.config.mjs
 COPY --from=admin-ui-build /app/.next ./.next
 EXPOSE 3000
 CMD ["npm", "start"]
@@ -63,6 +65,7 @@ ARG NEXT_PUBLIC_CUSTOMER_API_URL=
 ENV NEXT_PUBLIC_CUSTOMER_API_URL=$NEXT_PUBLIC_CUSTOMER_API_URL
 COPY digitize-ui/package.json digitize-ui/package-lock.json ./
 RUN npm ci
+COPY digitize-design-system /digitize-design-system
 COPY digitize-ui ./
 RUN npm run build
 
@@ -73,5 +76,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY digitize-ui/package.json digitize-ui/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=ui-build /app/.next ./.next
+EXPOSE 3000
+CMD ["npm", "start"]
+
+FROM node:22-alpine AS preview-build
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY digitize-preview-app/package.json digitize-preview-app/package-lock.json ./
+RUN npm ci
+COPY digitize-design-system /digitize-design-system
+COPY digitize-preview-app ./
+RUN npm run build
+
+FROM node:22-alpine AS preview
+WORKDIR /app
+ENV NODE_ENV=production
+COPY digitize-preview-app/package.json digitize-preview-app/package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY digitize-preview-app/next.runtime.config.mjs ./next.config.mjs
+COPY --from=preview-build /app/.next ./.next
 EXPOSE 3000
 CMD ["npm", "start"]

@@ -8,6 +8,7 @@ export declare class StorefrontController {
     }>;
     products(): Promise<import("pg").QueryResultRow[]>;
     product(productId: string): Promise<any>;
+    media(id: string, response: any): Promise<void>;
     register(body: {
         email: string;
         password: string;

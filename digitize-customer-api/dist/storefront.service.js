@@ -30,6 +30,8 @@ let StorefrontService = class StorefrontService {
     }
     async product(productId) { const store = await this.publicStore(); const products = await this.query(`SELECT p.id, p.data, COALESCE(json_agg(json_build_object('id', i.id, 'url', i.url, 'altText', i.alt_text) ORDER BY i.position) FILTER (WHERE i.id IS NOT NULL), '[]') AS images FROM products p LEFT JOIN product_images i ON i.product_id=p.id AND i.variant_id IS NULL WHERE p.store_id=$1 AND p.id=$2 AND COALESCE((p.data->>'published')::boolean, TRUE)=TRUE GROUP BY p.id`, [store.id, productId]); if (!products[0])
         throw new common_1.NotFoundException('Product was not found'); return products[0]; }
+    async media(id) { const store = await this.publicStore(); const [blob] = await this.query('SELECT bytes, mime_type AS "mimeType" FROM media_blobs WHERE id=$1 AND store_id=$2', [id, store.id]); if (!blob)
+        throw new common_1.NotFoundException('Image was not found'); return blob; }
     async register(input) { const id = (0, node_crypto_1.randomUUID)(); try {
         await this.query('INSERT INTO customer_accounts (id,email,password_hash,name) VALUES ($1,$2,$3,$4)', [id, input.email.trim().toLowerCase(), await (0, bcryptjs_1.hash)(input.password, 12), input.name.trim()]);
     }
@@ -53,7 +55,7 @@ let StorefrontService = class StorefrontService {
     catch {
         throw new common_1.UnauthorizedException('Your session has expired');
     } }
-    async publicStore() { const storeId = process.env.PUBLIC_STORE_ID; const storeSlug = process.env.PUBLIC_STORE_SLUG; const [store] = await this.query(`SELECT id, tenant_id AS "tenantId", name, slug FROM stores WHERE ($1::uuid IS NOT NULL AND id=$1) OR ($1::uuid IS NULL AND $2::text IS NOT NULL AND slug=$2) OR ($1::uuid IS NULL AND $2::text IS NULL) ORDER BY created_at LIMIT 1`, [storeId ?? null, storeSlug ?? null]); if (!store)
+    async publicStore() { const storeId = process.env.PUBLIC_STORE_ID?.trim() || null; const storeSlug = process.env.PUBLIC_STORE_SLUG?.trim() || null; const [store] = await this.query(`SELECT id, tenant_id AS "tenantId", name, slug FROM stores WHERE ($1::uuid IS NOT NULL AND id=$1) OR ($1::uuid IS NULL AND $2::text IS NOT NULL AND slug=$2) OR ($1::uuid IS NULL AND $2::text IS NULL) ORDER BY created_at DESC LIMIT 1`, [storeId, storeSlug]); if (!store)
         throw new common_1.NotFoundException('No public store is configured'); return store; }
     async query(sql, values = []) { return (await this.database.query(sql, values)).rows; }
 };

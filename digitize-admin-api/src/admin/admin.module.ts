@@ -4,11 +4,13 @@ import { DatabaseModule } from '../database/database.module';
 import { AdminController } from './admin.controller';
 import { StoresController } from './stores.controller';
 import { CatalogController } from './catalog.controller';
+import { CollectionMediaController } from './collection-media.controller';
+import { LocalMediaController } from './local-media.controller';
 import { AdminStoreService } from './admin-store.service';
 
 @Module({
   imports: [AuthModule, DatabaseModule],
-  controllers: [AdminController, StoresController, CatalogController],
+  controllers: [AdminController, StoresController, CatalogController, CollectionMediaController, LocalMediaController],
   providers: [AdminStoreService],
 })
 export class AdminModule {}

@@ -51,6 +51,7 @@ export function ResourceManager({ bid, storeId, resource }: { bid: string; store
   const [values, setValues] = useState<Record<string, string | boolean>>(() => initialValues(definition.fields));
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [productImage, setProductImage] = useState<File | null>(null);
   const token = typeof window === 'undefined' ? null : localStorage.getItem('digitize_token');
 
   const load = async () => {
@@ -67,8 +68,13 @@ export function ResourceManager({ bid, storeId, resource }: { bid: string; store
     if (!token) return;
     try {
       const result = await api<Item>(editing ? `${endpoint}/${editing.id}` : endpoint, token, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(payload(definition.fields, values)) });
+      if (resource === 'products' && !editing && productImage) {
+        const base64 = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(productImage); });
+        const media = await api<{ url:string; storageKey:string }>(`/api/business/${bid}/stores/${storeId}/media`, token, { method:'POST', body:JSON.stringify({ filename:productImage.name, mimeType:productImage.type, base64 }) });
+        await api(`/api/business/${bid}/stores/${storeId}/products/${result.id}/images`, token, { method:'POST', body:JSON.stringify({ url:media.url, storageKey:media.storageKey }) });
+      }
       setItems((current) => editing ? current.map((item) => item.id === result.id ? result : item) : [result, ...current]);
-      reset(); setMessage(editing ? 'Changes saved.' : 'Created successfully.');
+      setProductImage(null); reset(); setMessage(editing ? 'Changes saved.' : 'Created successfully.');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to save record'); }
   };
   const remove = async (item: Item) => {
@@ -79,10 +85,22 @@ export function ResourceManager({ bid, storeId, resource }: { bid: string; store
   return <>
     <div className="page-head"><div><h1>{definition.title}</h1><p className="muted">{definition.description}</p></div><button onClick={reset}>New {definition.title.slice(0, -1)}</button></div>
     {message && <p className="notice">{message}</p>}
-    <div className="manager-grid"><section className="panel"><h2>{editing ? `Edit ${definition.title.slice(0, -1)}` : `New ${definition.title.slice(0, -1)}`}</h2><form className="form-grid" onSubmit={save}>{definition.fields.map((field) => <FieldInput key={field.key} field={field} values={values} setValues={setValues} />)}<div className="actions"><button type="submit">{editing ? 'Save changes' : 'Create'}</button>{editing && <button type="button" className="secondary" onClick={reset}>Cancel</button>}</div></form></section>
+    <div className="manager-grid"><section className="panel"><h2>{editing ? `Edit ${definition.title.slice(0, -1)}` : `New ${definition.title.slice(0, -1)}`}</h2><form className="form-grid" onSubmit={save}>{definition.fields.map((field) => <FieldInput key={field.key} field={field} values={values} setValues={setValues} />)}{resource === 'products' && !editing && <label>Product image <input type="file" accept="image/*" onChange={event => setProductImage(event.target.files?.[0] ?? null)} /></label>}<div className="actions"><button type="submit">{editing ? 'Save changes' : 'Create'}</button>{editing && <button type="button" className="secondary" onClick={reset}>Cancel</button>}</div></form></section>
       <section className="panel"><h2>Records</h2>{loading ? <p className="muted">Loading…</p> : items.length === 0 ? <p className="muted">No records yet.</p> : <div className="record-list">{items.map((item) => <article className="record" key={item.id}><div><strong>{String(item.name ?? item.title ?? item.orderNumber ?? item.code ?? item.sku ?? 'Untitled')}</strong><p className="muted">{definition.fields.slice(1, 3).map((field) => `${field.label}: ${String(item[field.key] ?? '—')}`).join(' · ')}</p></div><div className="row-actions"><button className="secondary" onClick={() => edit(item)}>Edit</button>{resource === 'products' && <button className="secondary" onClick={() => edit(item)}>Catalog</button>}<button className="danger" onClick={() => void remove(item)}>Delete</button></div></article>)}</div>}</section></div>
     {resource === 'products' && editing && token && <ProductCatalog bid={bid} storeId={storeId} product={editing} token={token} />}
+    {resource === 'collections' && editing && token && <CollectionImages bid={bid} storeId={storeId} collection={editing} token={token} />}
   </>;
+}
+
+type CollectionImage = { id: string; url: string; storage_key: string; alt_text?: string };
+function CollectionImages({ bid, storeId, collection, token }: { bid:string; storeId:string; collection:Item; token:string }) {
+  const endpoint = `/api/business/${bid}/stores/${storeId}/collections/${collection.id}/images`;
+  const [images,setImages] = useState<CollectionImage[]>([]); const [url,setUrl] = useState(''); const [storageKey,setStorageKey] = useState(''); const [altText,setAltText] = useState(''); const [notice,setNotice] = useState('');
+  const chooseImage = async (file:File) => { const base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file);});const uploaded=await api<{url:string;storageKey:string}>(`/api/business/${bid}/stores/${storeId}/media`,token,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,base64})});setUrl(uploaded.url);setStorageKey(uploaded.storageKey); };
+  const load = async () => { try { setImages(await api<CollectionImage[]>(endpoint,token)); } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to load collection images'); } };
+  useEffect(() => { void load(); }, [endpoint]);
+  const add = async (event:FormEvent) => { event.preventDefault(); try { const image=await api<CollectionImage>(endpoint,token,{method:'POST',body:JSON.stringify({url,storageKey,altText})});setImages(current=>[...current,image]);setUrl('');setStorageKey('');setAltText(''); } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to add collection image'); } };
+  return <section className="panel catalog"><h2>Images for {String(collection.title)}</h2>{notice&&<p className="notice">{notice}</p>}<form className="form-grid narrow" onSubmit={add}><label>Choose image<input required type="file" accept="image/*" onChange={event=>{const file=event.target.files?.[0];if(file)void chooseImage(file).catch(error=>setNotice(error instanceof Error?error.message:'Unable to upload image'));}}/></label><button disabled={!url || !storageKey}>Add image</button></form><div className="image-grid">{images.map(image=><img key={image.id} src={image.url} alt=""/>)}</div></section>;
 }
 
 type Option = { id: string; name: string; values: { id: string; value: string }[] };
@@ -95,6 +113,7 @@ function ProductCatalog({ bid, storeId, product, token }: { bid: string; storeId
   const [optionName, setOptionName] = useState(''); const [optionValues, setOptionValues] = useState('');
   const [sku, setSku] = useState(''); const [price, setPrice] = useState(''); const [stock, setStock] = useState('0'); const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState(''); const [storageKey, setStorageKey] = useState(''); const [altText, setAltText] = useState('');
+  const chooseImage = async (file: File) => { const base64 = await new Promise<string>((resolve,reject) => { const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result)); reader.onerror=reject; reader.readAsDataURL(file); }); const uploaded=await api<{url:string;storageKey:string}>(`/api/business/${bid}/stores/${storeId}/media`,token,{method:'POST',body:JSON.stringify({filename:file.name,mimeType:file.type,base64})}); setImageUrl(uploaded.url); setStorageKey(uploaded.storageKey); };
   const load = async () => { try { const [nextOptions, nextVariants, nextImages] = await Promise.all([api<Option[]>(`${base}/options`, token), api<Variant[]>(`${base}/variants`, token), api<Image[]>(`${base}/images`, token)]); setOptions(nextOptions); setVariants(nextVariants); setImages(nextImages); } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to load catalog'); } };
   useEffect(() => { void load(); }, [base]);
   const valueChoices = useMemo(() => options.flatMap((option) => option.values.map((value) => ({ ...value, option: option.name }))), [options]);
@@ -103,5 +122,5 @@ function ProductCatalog({ bid, storeId, product, token }: { bid: string; storeId
   const addImage = async (event: FormEvent) => { event.preventDefault(); try { const result = await api<Image>(`${base}/images`, token, { method: 'POST', body: JSON.stringify({ url: imageUrl, storageKey, altText }) }); setImages((current) => [...current, result]); setImageUrl(''); setStorageKey(''); setAltText(''); } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to add image'); } };
   return <section className="panel catalog"><h2>Catalog for {String(product.name)}</h2><p className="muted">Options, variants, and image records are stored with this product.</p>{notice && <p className="notice">{notice}</p>}<div className="catalog-grid"><form className="form-grid" onSubmit={addOption}><h3>Add option</h3><label>Name<input required value={optionName} onChange={(event) => setOptionName(event.target.value)} placeholder="Size" /></label><label>Values (comma-separated)<input required value={optionValues} onChange={(event) => setOptionValues(event.target.value)} placeholder="Small, Medium, Large" /></label><button>Add option</button><ul className="compact-list">{options.map((option) => <li key={option.id}><strong>{option.name}</strong>: {option.values.map((value) => value.value).join(', ')}</li>)}</ul></form>
     <form className="form-grid" onSubmit={addVariant}><h3>Add variant</h3><label>SKU<input value={sku} onChange={(event) => setSku(event.target.value)} /></label><label>Price<input required type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} /></label><label>Stock<input type="number" min="0" value={stock} onChange={(event) => setStock(event.target.value)} /></label><fieldset><legend>Option values</legend>{valueChoices.map((value) => <label className="check" key={value.id}><input type="checkbox" checked={selectedValues.includes(value.id)} onChange={() => setSelectedValues((current) => current.includes(value.id) ? current.filter((id) => id !== value.id) : [...current, value.id])} /> {value.option}: {value.value}</label>)}</fieldset><button>Add variant</button><ul className="compact-list">{variants.map((variant) => <li key={variant.id}>{variant.sku || 'No SKU'} · {variant.price} · stock {variant.inventory_quantity ?? 0}</li>)}</ul></form>
-    <form className="form-grid" onSubmit={addImage}><h3>Add image record</h3><label>Image URL<input required type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} /></label><label>Storage key<input required value={storageKey} onChange={(event) => setStorageKey(event.target.value)} /></label><label>Alt text<input value={altText} onChange={(event) => setAltText(event.target.value)} /></label><button>Add image</button><div className="image-grid">{images.map((image) => <img key={image.id} src={image.url} alt={image.alt_text ?? ''} />)}</div></form></div></section>;
+    <form className="form-grid" onSubmit={addImage}><h3>Add image</h3><label>Choose image<input required type="file" accept="image/*" onChange={event=>{const file=event.target.files?.[0];if(file)void chooseImage(file).catch(error=>setNotice(error instanceof Error?error.message:'Unable to upload image'));}} /></label><button disabled={!imageUrl || !storageKey}>Add image</button><div className="image-grid">{images.map((image) => <img key={image.id} src={image.url} alt="" />)}</div></form></div></section>;
 }

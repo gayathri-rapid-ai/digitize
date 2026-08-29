@@ -1,3 +1,9 @@
 'use client';
-import Link from 'next/link'; import { useRouter } from 'next/navigation';
-export function Shell({bid,storeId,children}:{bid:string;storeId:string;children:React.ReactNode}){const base=`/business/${bid}/store/${storeId}`;const router=useRouter();return <div className="shell"><aside className="side"><div className="brand">digitize</div><nav className="nav">{['dashboard','products','collections','inventory','orders','customers','discounts','analytics','team','settings'].map(x=><Link key={x} href={`${base}/${x}`}>{x[0].toUpperCase()+x.slice(1)}</Link>)}</nav></aside><main className="main"><div className="top"><span className="muted">Business {bid.slice(0,8)} · Store {storeId.slice(0,8)}</span><button onClick={()=>{localStorage.removeItem('digitize_token');router.push('/business/login')}}>Sign out</button></div>{children}</main></div>}
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+
+const sections = ['dashboard','products','collections','inventory','orders','customers','discounts','analytics','team','settings','preview'];
+export function Shell({bid,storeId,children}:{bid:string;storeId:string;children:React.ReactNode}) {
+  const base=`/business/${bid}/store/${storeId}`, router=useRouter(), pathname=usePathname();
+  return <div className="shell"><aside className="side"><div className="brand">digitize</div><nav className="nav">{sections.map(section=>{const href=`${base}/${section}`;return <Link key={section} href={href} className={pathname===href?'active':''}>{section[0].toUpperCase()+section.slice(1)}</Link>;})}</nav></aside><main className="main"><div className="top"><span className="muted">Store workspace</span><button onClick={()=>{localStorage.removeItem('digitize_token');router.push('/business/login')}}>Sign out</button></div>{children}</main></div>;
+}

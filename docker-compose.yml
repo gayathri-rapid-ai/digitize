@@ -82,6 +82,13 @@ services:
     restart: unless-stopped
     depends_on:
       - customer-api
+  preview:
+    build:
+      context: .
+      target: preview
+    restart: unless-stopped
+    depends_on:
+      - admin-api
 
   haproxy:
     image: haproxy:3.1-alpine
@@ -91,6 +98,7 @@ services:
       - customer-api
       - admin-ui
       - ui
+      - preview
     ports:
       - "${APP_PORT:-3000}:80"
     volumes:

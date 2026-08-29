@@ -10,6 +10,10 @@ export declare class StorefrontService {
     }>;
     products(): Promise<QueryResultRow[]>;
     product(productId: string): Promise<any>;
+    media(id: string): Promise<{
+        bytes: Buffer;
+        mimeType: string;
+    }>;
     register(input: {
         email: string;
         password: string;
