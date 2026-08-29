@@ -1,1 +1,5 @@
 .env
+
+# Dependency directories in every application
+node_modules/
+**/node_modules/

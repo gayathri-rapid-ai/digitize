@@ -19,7 +19,7 @@ services:
   migrate:
     build:
       context: .
-      target: api
+      target: admin-api
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-digitize}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-digitize}
     depends_on:
@@ -28,10 +28,10 @@ services:
     command: ["npm", "run", "db:migrate"]
     restart: "no"
 
-  api:
+  admin-api:
     build:
       context: .
-      target: api
+      target: admin-api
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -46,22 +46,49 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-  admin:
+  customer-api:
     build:
       context: .
-      target: admin
+      target: customer-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CUSTOMER_JWT_SECRET: ${CUSTOMER_JWT_SECRET:-${JWT_SECRET:?Set JWT_SECRET in .env}}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-digitize}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-digitize}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+  admin-ui:
+    build:
+      context: .
+      target: admin-ui
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     restart: unless-stopped
     depends_on:
-      - api
+      - admin-api
+  ui:
+    build:
+      context: .
+      target: ui
+      args:
+        NEXT_PUBLIC_CUSTOMER_API_URL: ${NEXT_PUBLIC_CUSTOMER_API_URL:-}
+    restart: unless-stopped
+    depends_on:
+      - customer-api
 
   haproxy:
     image: haproxy:3.1-alpine
     restart: unless-stopped
     depends_on:
-      - api
-      - admin
+      - admin-api
+      - customer-api
+      - admin-ui
+      - ui
     ports:
       - "${APP_PORT:-3000}:80"
     volumes:
