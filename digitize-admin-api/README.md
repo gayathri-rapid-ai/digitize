@@ -37,9 +37,9 @@ APIs, but NestJS remains the token issuer and OAuth callback handler.
 
 ## Admin console API
 
-All admin routes are under `/admin/business/:bid` and require a Bearer JWT
-issued for that business. Create/list stores through `/admin/business/:bid/stores`.
-Store operations are under `/admin/business/:bid/stores/:storeId`; the store is
+All admin routes are under `/api/business/:bid` and require a Bearer JWT
+issued for that business. Create/list stores through `/api/business/:bid/stores`.
+Store operations are under `/api/business/:bid/stores/:storeId`; the store is
 verified as belonging to that business before any query runs. The API includes:
 
 - `dashboard`, `analytics`, and `store` settings

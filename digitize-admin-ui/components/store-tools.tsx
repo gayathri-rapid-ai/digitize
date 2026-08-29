@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
 type Scope = { bid: string; storeId: string };
-const base = ({ bid, storeId }: Scope) => `/admin/business/${bid}/stores/${storeId}`;
+const base = ({ bid, storeId }: Scope) => `/api/business/${bid}/stores/${storeId}`;
 
 export function SettingsPanel(scope: Scope) {
   const [currency, setCurrency] = useState('USD'); const [timezone, setTimezone] = useState('UTC'); const [message, setMessage] = useState('');

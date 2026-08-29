@@ -45,7 +45,7 @@ function FieldInput({ field, values, setValues }: { field: Field; values: Record
 
 export function ResourceManager({ bid, storeId, resource }: { bid: string; storeId: string; resource: Resource }) {
   const definition = definitions[resource];
-  const endpoint = `/admin/business/${bid}/stores/${storeId}/${resource}`;
+  const endpoint = `/api/business/${bid}/stores/${storeId}/${resource}`;
   const [items, setItems] = useState<Item[]>([]);
   const [editing, setEditing] = useState<Item | null>(null);
   const [values, setValues] = useState<Record<string, string | boolean>>(() => initialValues(definition.fields));
@@ -90,7 +90,7 @@ type Variant = { id: string; sku?: string; price: string | number; inventory_qua
 type Image = { id: string; url: string; storage_key: string; alt_text?: string };
 
 function ProductCatalog({ bid, storeId, product, token }: { bid: string; storeId: string; product: Item; token: string }) {
-  const base = `/admin/business/${bid}/stores/${storeId}/products/${product.id}`;
+  const base = `/api/business/${bid}/stores/${storeId}/products/${product.id}`;
   const [options, setOptions] = useState<Option[]>([]); const [variants, setVariants] = useState<Variant[]>([]); const [images, setImages] = useState<Image[]>([]); const [notice, setNotice] = useState('');
   const [optionName, setOptionName] = useState(''); const [optionValues, setOptionValues] = useState('');
   const [sku, setSku] = useState(''); const [price, setPrice] = useState(''); const [stock, setStock] = useState('0'); const [selectedValues, setSelectedValues] = useState<string[]>([]);

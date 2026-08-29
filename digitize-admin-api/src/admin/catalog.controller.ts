@@ -12,7 +12,7 @@ import { DatabaseService } from '../database/database.service';
 
 @ApiTags('Catalog variants and media')
 @ApiBearerAuth()
-@Controller('admin/business/:bid/stores/:storeId/products/:productId')
+@Controller('business/:bid/stores/:storeId/products/:productId')
 @UseGuards(JwtAuthGuard, TenantGuard, StoreGuard, RolesGuard)
 @TenantScoped()
 export class CatalogController {

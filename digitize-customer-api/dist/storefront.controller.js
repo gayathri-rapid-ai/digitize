@@ -21,34 +21,32 @@ let StorefrontController = class StorefrontController {
     constructor(storefront) {
         this.storefront = storefront;
     }
-    stores() { return this.storefront.stores(); }
-    products(storeSlug) { return this.storefront.products(storeSlug); }
-    product(storeSlug, productId) { return this.storefront.product(storeSlug, productId); }
+    context() { return this.storefront.context(); }
+    products() { return this.storefront.products(); }
+    product(productId) { return this.storefront.product(productId); }
     register(body) { return this.storefront.register(body); }
     login(body) { return this.storefront.login(body); }
     me(token) { return this.storefront.account(token); }
-    order(token, storeSlug, body) { return this.storefront.createOrder(token, storeSlug, body); }
+    order(token, body) { return this.storefront.createOrder(token, body); }
 };
 exports.StorefrontController = StorefrontController;
 __decorate([
-    (0, common_1.Get)('stores'),
+    (0, common_1.Get)('context'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], StorefrontController.prototype, "stores", null);
+], StorefrontController.prototype, "context", null);
 __decorate([
-    (0, common_1.Get)('stores/:storeSlug/products'),
-    __param(0, (0, common_1.Param)('storeSlug')),
+    (0, common_1.Get)('products'),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], StorefrontController.prototype, "products", null);
 __decorate([
-    (0, common_1.Get)('stores/:storeSlug/products/:productId'),
-    __param(0, (0, common_1.Param)('storeSlug')),
-    __param(1, (0, common_1.Param)('productId')),
+    (0, common_1.Get)('products/:productId'),
+    __param(0, (0, common_1.Param)('productId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], StorefrontController.prototype, "product", null);
 __decorate([
@@ -75,18 +73,17 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], StorefrontController.prototype, "me", null);
 __decorate([
-    (0, common_1.Post)('stores/:storeSlug/orders'),
+    (0, common_1.Post)('orders'),
     (0, swagger_1.ApiBearerAuth)(),
     __param(0, (0, common_1.Headers)('authorization')),
-    __param(1, (0, common_1.Param)('storeSlug')),
-    __param(2, (0, common_1.Body)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], StorefrontController.prototype, "order", null);
 exports.StorefrontController = StorefrontController = __decorate([
-    (0, swagger_1.ApiTags)('Storefront'),
-    (0, common_1.Controller)('storefront'),
+    (0, swagger_1.ApiTags)('Public API'),
+    (0, common_1.Controller)('api/public'),
     __metadata("design:paramtypes", [storefront_service_1.StorefrontService])
 ], StorefrontController);
 //# sourceMappingURL=storefront.controller.js.map

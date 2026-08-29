@@ -17,7 +17,7 @@ const loginBody = {
 };
 
 @ApiTags('Authentication')
-@Controller('auth')
+@Controller('business/auth')
 export class AuthController {
   constructor(private readonly auth: AuthService, private readonly users: UsersService) {}
 

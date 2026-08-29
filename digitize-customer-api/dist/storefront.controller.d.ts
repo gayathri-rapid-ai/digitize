@@ -2,13 +2,12 @@ import { StorefrontService } from './storefront.service';
 export declare class StorefrontController {
     private readonly storefront;
     constructor(storefront: StorefrontService);
-    stores(): Promise<{
-        id: string;
+    context(): Promise<{
         name: string;
         slug: string;
-    }[]>;
-    products(storeSlug: string): Promise<import("pg").QueryResultRow[]>;
-    product(storeSlug: string, productId: string): Promise<any>;
+    }>;
+    products(): Promise<import("pg").QueryResultRow[]>;
+    product(productId: string): Promise<any>;
     register(body: {
         email: string;
         password: string;
@@ -37,7 +36,7 @@ export declare class StorefrontController {
         email: string;
         name: string;
     }>;
-    order(token: string | undefined, storeSlug: string, body: {
+    order(token: string | undefined, body: {
         items: Array<{
             productId: string;
             quantity: number;

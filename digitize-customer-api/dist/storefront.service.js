@@ -21,13 +21,14 @@ let StorefrontService = class StorefrontService {
     constructor(jwt) {
         this.jwt = jwt;
     }
-    async stores() { return this.query('SELECT id, name, slug FROM stores ORDER BY created_at'); }
-    async products(storeSlug) {
+    async context() { const store = await this.publicStore(); return { name: store.name, slug: store.slug }; }
+    async products() {
+        const store = await this.publicStore();
         return this.query(`SELECT p.id, p.data, p.created_at AS "createdAt", COALESCE(json_agg(json_build_object('id', i.id, 'url', i.url, 'altText', i.alt_text) ORDER BY i.position) FILTER (WHERE i.id IS NOT NULL), '[]') AS images
       FROM products p JOIN stores s ON s.id = p.store_id LEFT JOIN product_images i ON i.product_id = p.id AND i.variant_id IS NULL
-      WHERE s.slug = $1 AND COALESCE((p.data->>'published')::boolean, TRUE) = TRUE GROUP BY p.id ORDER BY p.created_at DESC`, [storeSlug]);
+      WHERE s.id = $1 AND COALESCE((p.data->>'published')::boolean, TRUE) = TRUE GROUP BY p.id ORDER BY p.created_at DESC`, [store.id]);
     }
-    async product(storeSlug, productId) { const products = await this.query(`SELECT p.id, p.data, COALESCE(json_agg(json_build_object('id', i.id, 'url', i.url, 'altText', i.alt_text) ORDER BY i.position) FILTER (WHERE i.id IS NOT NULL), '[]') AS images FROM products p JOIN stores s ON s.id=p.store_id LEFT JOIN product_images i ON i.product_id=p.id AND i.variant_id IS NULL WHERE s.slug=$1 AND p.id=$2 AND COALESCE((p.data->>'published')::boolean, TRUE)=TRUE GROUP BY p.id`, [storeSlug, productId]); if (!products[0])
+    async product(productId) { const store = await this.publicStore(); const products = await this.query(`SELECT p.id, p.data, COALESCE(json_agg(json_build_object('id', i.id, 'url', i.url, 'altText', i.alt_text) ORDER BY i.position) FILTER (WHERE i.id IS NOT NULL), '[]') AS images FROM products p LEFT JOIN product_images i ON i.product_id=p.id AND i.variant_id IS NULL WHERE p.store_id=$1 AND p.id=$2 AND COALESCE((p.data->>'published')::boolean, TRUE)=TRUE GROUP BY p.id`, [store.id, productId]); if (!products[0])
         throw new common_1.NotFoundException('Product was not found'); return products[0]; }
     async register(input) { const id = (0, node_crypto_1.randomUUID)(); try {
         await this.query('INSERT INTO customer_accounts (id,email,password_hash,name) VALUES ($1,$2,$3,$4)', [id, input.email.trim().toLowerCase(), await (0, bcryptjs_1.hash)(input.password, 12), input.name.trim()]);
@@ -41,9 +42,8 @@ let StorefrontService = class StorefrontService {
         throw new common_1.UnauthorizedException('Invalid email or password'); return this.token(account); }
     async account(token) { const payload = this.verify(token); const [account] = await this.query('SELECT id,email,name FROM customer_accounts WHERE id=$1', [payload.sub]); if (!account)
         throw new common_1.UnauthorizedException(); return account; }
-    async createOrder(token, storeSlug, body) { const customer = await this.account(token); if (!body.items?.length)
-        throw new common_1.ConflictException('An order needs at least one item'); const [store] = await this.query('SELECT id, tenant_id AS "tenantId" FROM stores WHERE slug=$1', [storeSlug]); if (!store)
-        throw new common_1.NotFoundException('Store was not found'); const id = (0, node_crypto_1.randomUUID)(); const products = await this.query('SELECT id,data FROM products WHERE store_id=$1 AND id = ANY($2::uuid[])', [store.id, body.items.map(item => item.productId)]); if (products.length !== body.items.length)
+    async createOrder(token, body) { const customer = await this.account(token); if (!body.items?.length)
+        throw new common_1.ConflictException('An order needs at least one item'); const store = await this.publicStore(); const id = (0, node_crypto_1.randomUUID)(); const products = await this.query('SELECT id,data FROM products WHERE store_id=$1 AND id = ANY($2::uuid[])', [store.id, body.items.map(item => item.productId)]); if (products.length !== body.items.length)
         throw new common_1.NotFoundException('One or more products were not found'); const lines = body.items.map(item => ({ ...item, product: products.find(product => product.id === item.productId)?.data })); await this.query('INSERT INTO orders (id,tenant_id,store_id,data) VALUES ($1,$2,$3,$4::jsonb)', [id, store.tenantId, store.id, JSON.stringify({ customerAccountId: customer.id, customerEmail: customer.email, items: lines, shippingAddress: body.shippingAddress ?? {}, status: 'PENDING' })]); return { id, status: 'PENDING' }; }
     token(account) { return { accessToken: this.jwt.sign({ sub: account.id, email: account.email, name: account.name }), customer: { id: account.id, email: account.email, name: account.name } }; }
     verify(token) { if (!token?.startsWith('Bearer '))
@@ -53,6 +53,8 @@ let StorefrontService = class StorefrontService {
     catch {
         throw new common_1.UnauthorizedException('Your session has expired');
     } }
+    async publicStore() { const storeId = process.env.PUBLIC_STORE_ID; const storeSlug = process.env.PUBLIC_STORE_SLUG; const [store] = await this.query(`SELECT id, tenant_id AS "tenantId", name, slug FROM stores WHERE ($1::uuid IS NOT NULL AND id=$1) OR ($1::uuid IS NULL AND $2::text IS NOT NULL AND slug=$2) OR ($1::uuid IS NULL AND $2::text IS NULL) ORDER BY created_at LIMIT 1`, [storeId ?? null, storeSlug ?? null]); if (!store)
+        throw new common_1.NotFoundException('No public store is configured'); return store; }
     async query(sql, values = []) { return (await this.database.query(sql, values)).rows; }
 };
 exports.StorefrontService = StorefrontService;

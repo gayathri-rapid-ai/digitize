@@ -8,7 +8,7 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors();
     const config = new swagger_1.DocumentBuilder().setTitle('Digitize Customer API').setDescription('Public catalog, customer accounts, and orders').setVersion('1.0').addBearerAuth().build();
-    swagger_1.SwaggerModule.setup('api', app, swagger_1.SwaggerModule.createDocument(app, config));
+    swagger_1.SwaggerModule.setup('api/public/docs', app, swagger_1.SwaggerModule.createDocument(app, config));
     await app.listen(process.env.PORT ?? 3001);
 }
 void bootstrap();

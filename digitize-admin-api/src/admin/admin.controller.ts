@@ -22,7 +22,7 @@ const memberBody = {
 
 @ApiTags('Admin console')
 @ApiBearerAuth()
-@Controller('admin/business/:bid/stores/:storeId')
+@Controller('business/:bid/stores/:storeId')
 @UseGuards(JwtAuthGuard, TenantGuard, StoreGuard, RolesGuard)
 @TenantScoped()
 @Roles(Role.STAFF)

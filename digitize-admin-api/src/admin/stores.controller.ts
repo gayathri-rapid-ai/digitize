@@ -11,7 +11,7 @@ import { DatabaseService } from '../database/database.service';
 
 @ApiTags('Stores')
 @ApiBearerAuth()
-@Controller('admin/business/:bid/stores')
+@Controller('business/:bid/stores')
 @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
 @TenantScoped()
 export class StoresController {

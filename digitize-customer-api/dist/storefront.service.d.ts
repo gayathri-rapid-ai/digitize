@@ -4,13 +4,12 @@ export declare class StorefrontService {
     private readonly jwt;
     private readonly database;
     constructor(jwt: JwtService);
-    stores(): Promise<{
-        id: string;
+    context(): Promise<{
         name: string;
         slug: string;
-    }[]>;
-    products(storeSlug: string): Promise<QueryResultRow[]>;
-    product(storeSlug: string, productId: string): Promise<any>;
+    }>;
+    products(): Promise<QueryResultRow[]>;
+    product(productId: string): Promise<any>;
     register(input: {
         email: string;
         password: string;
@@ -39,7 +38,7 @@ export declare class StorefrontService {
         email: string;
         name: string;
     }>;
-    createOrder(token: string | undefined, storeSlug: string, body: {
+    createOrder(token: string | undefined, body: {
         items: Array<{
             productId: string;
             quantity: number;
@@ -51,5 +50,6 @@ export declare class StorefrontService {
     }>;
     private token;
     private verify;
+    private publicStore;
     private query;
 }
