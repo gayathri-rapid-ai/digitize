@@ -6,11 +6,13 @@ import { StoresController } from './stores.controller';
 import { CatalogController } from './catalog.controller';
 import { CollectionMediaController } from './collection-media.controller';
 import { LocalMediaController } from './local-media.controller';
+import { BusinessBrandingController } from './business-branding.controller';
+import { ThemesController } from './themes.controller';
 import { AdminStoreService } from './admin-store.service';
 
 @Module({
   imports: [AuthModule, DatabaseModule],
-  controllers: [AdminController, StoresController, CatalogController, CollectionMediaController, LocalMediaController],
+  controllers: [AdminController, StoresController, CatalogController, CollectionMediaController, LocalMediaController, BusinessBrandingController, ThemesController],
   providers: [AdminStoreService],
 })
 export class AdminModule {}

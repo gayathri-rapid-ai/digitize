@@ -9,7 +9,7 @@ type Account = { id: string; email: string; name: string; passwordHash: string }
 export class StorefrontService {
   private readonly database = new Pool({ connectionString: process.env.DATABASE_URL });
   constructor(private readonly jwt: JwtService) {}
-  async context() { const store = await this.publicStore(); const [settings] = await this.query<{data: Record<string, unknown>}>(`SELECT data FROM store_settings WHERE store_id=$1 ORDER BY updated_at DESC LIMIT 1`, [store.id]); return { name: store.name, slug: store.slug, theme: typeof settings?.data?.theme === 'string' ? settings.data.theme : 'minimal' }; }
+  async context() { const store = await this.publicStore(); const [branding,mapping,fallback] = await Promise.all([this.query<{logoUrl:string|null}>('SELECT logo_url AS "logoUrl" FROM business_branding WHERE tenant_id=$1',[store.tenantId]),this.query<{name:string;version:number;configuration:Record<string,string>}>('SELECT theme_name AS name,theme_version AS version,configuration FROM business_theme_mappings WHERE tenant_id=$1',[store.tenantId]),this.query<{name:string;version:number;configuration:Record<string,string>}>(`SELECT name,version,configuration FROM theme_definitions WHERE name='minimal' ORDER BY version DESC LIMIT 1`)]); const theme=mapping[0]??fallback[0]; return { name: store.name, slug: store.slug, theme, logoUrl: branding[0]?.logoUrl ?? null }; }
   async products() {
     const store = await this.publicStore();
     return this.query(`SELECT p.id, p.data, p.created_at AS "createdAt", COALESCE(json_agg(json_build_object('id', i.id, 'url', i.url, 'altText', i.alt_text) ORDER BY i.position) FILTER (WHERE i.id IS NOT NULL), '[]') AS images

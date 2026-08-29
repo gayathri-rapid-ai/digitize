@@ -1,5 +1,6 @@
 export type ThemeName = 'minimal' | 'classic' | 'bold';
 export type Theme = { name: ThemeName; label: string; tokens: Record<string, string> };
+export type ResolvedTheme = { name: string; version: number; configuration: Record<string, string> };
 
 export const themes: Theme[] = [
   { name: 'minimal', label: 'Minimal', tokens: { '--store-bg': '#f7f6f1', '--store-ink': '#17211d', '--store-accent': '#e5ff62', '--store-muted': '#66716a', '--store-line': '#d9ddd5' } },
@@ -8,3 +9,4 @@ export const themes: Theme[] = [
 ];
 
 export function themeStyle(name: ThemeName): Record<string, string> { return themes.find(theme => theme.name === name)?.tokens ?? themes[0].tokens; }
+export function resolvedThemeStyle(theme: ThemeName | ResolvedTheme): Record<string, string> { return typeof theme === 'string' ? themeStyle(theme) : theme.configuration; }
