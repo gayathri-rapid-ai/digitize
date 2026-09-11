@@ -1,31 +1,29 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
 
 type Item = Record<string, unknown> & { id: string };
-type Field = { key: string; label: string; type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox'; options?: string[] };
-type Resource = 'products' | 'collections' | 'inventory' | 'orders' | 'customers' | 'discounts';
+type Field = { key: string; label: string; type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox'; options?: string[]; required?: boolean };
+type Resource = 'products' | 'collections' | 'orders' | 'customers' | 'discounts';
 
 const definitions: Record<Resource, { title: string; description: string; fields: Field[] }> = {
   products: { title: 'Products', description: 'Create products and manage their variants, options, and gallery.', fields: [
-    { key: 'name', label: 'Product name' }, { key: 'description', label: 'Description', type: 'textarea' },
-    { key: 'status', label: 'Status', type: 'select', options: ['DRAFT', 'ACTIVE', 'ARCHIVED'] }, { key: 'price', label: 'Base price', type: 'number' }, { key: 'sku', label: 'SKU' },
+    { key: 'name', label: 'Product name', required: true }, { key: 'description', label: 'Description', type: 'textarea' },
+    { key: 'status', label: 'Status', type: 'select', options: ['DRAFT', 'ACTIVE', 'ARCHIVED'], required: true }, { key: 'price', label: 'Base price', type: 'number', required: true }, { key: 'sku', label: 'SKU' },
   ] },
   collections: { title: 'Collections', description: 'Group products into browsable collections.', fields: [
-    { key: 'title', label: 'Title' }, { key: 'handle', label: 'Handle' }, { key: 'description', label: 'Description', type: 'textarea' }, { key: 'active', label: 'Active', type: 'checkbox' },
+    { key: 'title', label: 'Title', required: true }, { key: 'handle', label: 'Handle', required: true }, { key: 'description', label: 'Description', type: 'textarea' }, { key: 'active', label: 'Active', type: 'checkbox' },
   ] },
-  inventory: { title: 'Inventory', description: 'Track stock records for your store.', fields: [
-    { key: 'sku', label: 'SKU' }, { key: 'productName', label: 'Product name' }, { key: 'quantity', label: 'Quantity', type: 'number' }, { key: 'location', label: 'Location' },
-  ] },
-  orders: { title: 'Orders', description: 'Create orders and update their fulfillment status.', fields: [
+  orders: { title: 'Orders', description: 'Review orders placed through your store.', fields: [
     { key: 'orderNumber', label: 'Order number' }, { key: 'customerName', label: 'Customer' }, { key: 'status', label: 'Status', type: 'select', options: ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED'] }, { key: 'total', label: 'Total', type: 'number' }, { key: 'notes', label: 'Notes', type: 'textarea' },
   ] },
-  customers: { title: 'Customers', description: 'Maintain your customer directory.', fields: [
+  customers: { title: 'Customers', description: 'Review your customer directory.', fields: [
     { key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'notes', label: 'Notes', type: 'textarea' },
   ] },
   discounts: { title: 'Discounts', description: 'Create codes and automatic promotions.', fields: [
-    { key: 'code', label: 'Discount code' }, { key: 'type', label: 'Type', type: 'select', options: ['PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'] }, { key: 'value', label: 'Value', type: 'number' }, { key: 'active', label: 'Active', type: 'checkbox' },
+    { key: 'code', label: 'Discount code', required: true }, { key: 'type', label: 'Type', type: 'select', options: ['PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'], required: true }, { key: 'value', label: 'Value', type: 'number', required: true }, { key: 'active', label: 'Active', type: 'checkbox' },
   ] },
 };
 
@@ -40,10 +38,13 @@ function payload(fields: Field[], values: Record<string, string | boolean>) {
 function FieldInput({ field, values, setValues }: { field: Field; values: Record<string, string | boolean>; setValues: (next: Record<string, string | boolean>) => void }) {
   const value = values[field.key];
   if (field.type === 'checkbox') return <label className="check"><input type="checkbox" checked={Boolean(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.checked })} /> {field.label}</label>;
-  return <label>{field.label}{field.type === 'textarea' ? <textarea value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })} /> : field.type === 'select' ? <select value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}>{field.options?.map((option) => <option key={option}>{option}</option>)}</select> : <input type={field.type ?? 'text'} value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })} />}</label>;
+  const caption = <span>{field.label}{field.required && <span aria-label="required" style={{ color: 'var(--danger)', fontWeight: 800 }}> *</span>}</span>;
+  if (field.type === 'textarea') return <label>{caption}<textarea required={field.required} value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })} /></label>;
+  if (field.type === 'select') return <label>{caption}<select required={field.required} value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}>{field.options?.map((option) => <option key={option}>{option}</option>)}</select></label>;
+  return <label>{caption}<input required={field.required} min={field.type === 'number' ? 0 : undefined} step={field.type === 'number' ? '0.01' : undefined} type={field.type ?? 'text'} value={String(value)} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })} /></label>;
 }
 
-export function ResourceManager({ bid, storeId, resource }: { bid: string; storeId: string; resource: Resource }) {
+export function ResourceManager({ bid, storeId, resource, itemId }: { bid: string; storeId: string; resource: Resource; itemId?: string }) {
   const definition = definitions[resource];
   const endpoint = `/api/business/${bid}/stores/${storeId}/${resource}`;
   const [items, setItems] = useState<Item[]>([]);
@@ -52,29 +53,41 @@ export function ResourceManager({ bid, storeId, resource }: { bid: string; store
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [productImage, setProductImage] = useState<File | null>(null);
+  const [existingProductImage, setExistingProductImage] = useState('');
+  const [page, setPage] = useState<'list' | 'form'>(itemId ? 'form' : 'list');
+  const readOnly = resource === 'orders' || resource === 'customers';
+  const routedEditor = resource === 'products' || resource === 'collections';
+  const router = useRouter(), pathname = usePathname();
+  const listPath = `/business/${bid}/store/${storeId}/${resource}`;
   const token = typeof window === 'undefined' ? null : localStorage.getItem('digitize_token');
+  const productImagePreview = useMemo(() => productImage ? URL.createObjectURL(productImage) : existingProductImage, [productImage, existingProductImage]);
+  useEffect(() => () => { if (productImagePreview.startsWith('blob:')) URL.revokeObjectURL(productImagePreview); }, [productImagePreview]);
+  useEffect(() => { setProductImage(null); if (itemId === 'new') setExistingProductImage(''); }, [itemId]);
 
   const load = async () => {
     if (!token) return;
     setLoading(true);
-    try { setItems(await api<Item[]>(endpoint, token)); } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to load records'); } finally { setLoading(false); }
+    try { const records=await api<Item[]>(endpoint, token);setItems(records);if(itemId&&itemId!=='new'){const selected=records.find(item=>item.id===itemId);if(selected){setEditing(selected);setValues(initialValues(definition.fields,selected));if(resource==='products'){const images=await api<Array<{url:string}>>(`${endpoint}/${selected.id}/images`,token);setExistingProductImage(images[0]?.url??'');}}else setMessage(`${definition.title.slice(0,-1)} was not found.`);} } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to load records'); } finally { setLoading(false); }
   };
-  useEffect(() => { void load(); }, [endpoint]);
+  useEffect(() => { void load(); }, [endpoint,itemId]);
 
-  const edit = (item: Item) => { setEditing(item); setValues(initialValues(definition.fields, item)); setMessage(''); };
-  const reset = () => { setEditing(null); setValues(initialValues(definition.fields)); setMessage(''); };
+  const edit = (item: Item) => { if(routedEditor){router.push(`${listPath}/${item.id}`);return;}setEditing(item);setValues(initialValues(definition.fields,item));setMessage('');setPage('form'); };
+  const reset = () => { if(routedEditor&&itemId){router.push(listPath);return;}setEditing(null);setValues(initialValues(definition.fields));setProductImage(null);setMessage('');setPage('list'); };
+  const create = () => { if(routedEditor){router.push(`${pathname}/new`);return;}setEditing(null);setValues(initialValues(definition.fields));setProductImage(null);setMessage('');setPage('form'); };
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!token) return;
+    const missing = definition.fields.find((field) => field.required && String(values[field.key] ?? '').trim() === '');
+    if (missing) { setMessage(`${missing.label} is required.`); return; }
     try {
       const result = await api<Item>(editing ? `${endpoint}/${editing.id}` : endpoint, token, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(payload(definition.fields, values)) });
-      if (resource === 'products' && !editing && productImage) {
+      if (resource === 'products' && productImage) {
         const base64 = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(productImage); });
         const media = await api<{ url:string; storageKey:string }>(`/api/business/${bid}/stores/${storeId}/media`, token, { method:'POST', body:JSON.stringify({ filename:productImage.name, mimeType:productImage.type, base64 }) });
         await api(`/api/business/${bid}/stores/${storeId}/products/${result.id}/images`, token, { method:'POST', body:JSON.stringify({ url:media.url, storageKey:media.storageKey }) });
       }
       setItems((current) => editing ? current.map((item) => item.id === result.id ? result : item) : [result, ...current]);
-      setProductImage(null); reset(); setMessage(editing ? 'Changes saved.' : 'Created successfully.');
+      setProductImage(null); if(routedEditor)router.push(listPath);else reset(); setMessage(editing ? 'Changes saved.' : 'Created successfully.');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to save record'); }
   };
   const remove = async (item: Item) => {
@@ -83,12 +96,12 @@ export function ResourceManager({ bid, storeId, resource }: { bid: string; store
   };
 
   return <>
-    <div className="page-head"><div><h1>{definition.title}</h1><p className="muted">{definition.description}</p></div><button onClick={reset}>New {definition.title.slice(0, -1)}</button></div>
+    <div className="page-head"><div><h1>{page === 'form' ? `${editing ? 'Edit' : 'Add'} ${definition.title.slice(0, -1)}` : definition.title}</h1><p className="muted">{definition.description}</p></div>{!readOnly && (page === 'list' ? <button onClick={create}>Add {definition.title.slice(0, -1)}</button> : <button className="secondary" onClick={reset}>Back to {definition.title}</button>)}</div>
     {message && <p className="notice">{message}</p>}
-    <div className="manager-grid"><section className="panel"><h2>{editing ? `Edit ${definition.title.slice(0, -1)}` : `New ${definition.title.slice(0, -1)}`}</h2><form className="form-grid" onSubmit={save}>{definition.fields.map((field) => <FieldInput key={field.key} field={field} values={values} setValues={setValues} />)}{resource === 'products' && !editing && <label>Product image <input type="file" accept="image/*" onChange={event => setProductImage(event.target.files?.[0] ?? null)} /></label>}<div className="actions"><button type="submit">{editing ? 'Save changes' : 'Create'}</button>{editing && <button type="button" className="secondary" onClick={reset}>Cancel</button>}</div></form></section>
-      <section className="panel"><h2>Records</h2>{loading ? <p className="muted">Loading…</p> : items.length === 0 ? <p className="muted">No records yet.</p> : <div className="record-list">{items.map((item) => <article className="record" key={item.id}><div><strong>{String(item.name ?? item.title ?? item.orderNumber ?? item.code ?? item.sku ?? 'Untitled')}</strong><p className="muted">{definition.fields.slice(1, 3).map((field) => `${field.label}: ${String(item[field.key] ?? '—')}`).join(' · ')}</p></div><div className="row-actions"><button className="secondary" onClick={() => edit(item)}>Edit</button>{resource === 'products' && <button className="secondary" onClick={() => edit(item)}>Catalog</button>}<button className="danger" onClick={() => void remove(item)}>Delete</button></div></article>)}</div>}</section></div>
-    {resource === 'products' && editing && token && <ProductCatalog bid={bid} storeId={storeId} product={editing} token={token} />}
-    {resource === 'collections' && editing && token && <CollectionImages bid={bid} storeId={storeId} collection={editing} token={token} />}
+    {page === 'list' && <section className="panel"><h2>{definition.title}</h2>{loading ? <p className="muted">Loading…</p> : items.length === 0 ? <p className="muted">No records yet.</p> : <div className="record-list">{items.map((item) => <article className="record" key={item.id}><div><strong>{String(item.name ?? item.title ?? item.orderNumber ?? item.customerName ?? item.email ?? item.code ?? 'Untitled')}</strong><p className="muted">{definition.fields.slice(1, 4).map((field) => `${field.label}: ${String(item[field.key] ?? '—')}`).join(' · ')}</p></div>{!readOnly&&<div className="row-actions"><button className="secondary" onClick={() => edit(item)}>Edit</button><button className="danger" onClick={() => void remove(item)}>Delete</button></div>}</article>)}</div>}</section>}
+    {page === 'form' && !readOnly && <div className={resource==='products'?'product-editor-layout':''}><section className="panel narrow editor-form"><form className="form-grid" onSubmit={save}>{definition.fields.map((field) => <FieldInput key={field.key} field={field} values={values} setValues={setValues} />)}<div className="actions"><button type="submit">{editing ? 'Save changes' : 'Create'}</button><button type="button" className="secondary" onClick={reset}>Cancel</button></div></form></section>{resource==='products'&&<aside className="panel product-image-panel"><h2>Product image</h2><div className="product-image-preview">{productImagePreview?<img src={productImagePreview} alt="Product preview"/>:<span>No product image selected</span>}</div><label>Choose image<input type="file" accept="image/*" onChange={event=>setProductImage(event.target.files?.[0]??null)}/></label><p className="muted">Use a square image for the best storefront result.</p></aside>}</div>}
+    {page === 'form' && resource === 'products' && editing && token && <ProductCatalog bid={bid} storeId={storeId} product={editing} token={token} />}
+    {page === 'form' && resource === 'collections' && editing && token && <CollectionImages bid={bid} storeId={storeId} collection={editing} token={token} />}
   </>;
 }
 

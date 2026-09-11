@@ -3,3 +3,9 @@
 # Dependency directories in every application
 node_modules/
 **/node_modules/
+
+# Generated build and test output
+**/.next/
+**/dist/
+**/coverage/
+*.tsbuildinfo

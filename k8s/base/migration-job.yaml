@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: digitize-migrate
+  namespace: digitize
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: digitize-admin-api:IMAGE_TAG_PLACEHOLDER
+          command: ["npm", "run", "db:migrate"]
+          envFrom:
+            - secretRef:
+                name: digitize-secrets

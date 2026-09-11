@@ -1,8 +1,9 @@
 .git
+.github
 .env
-**/.env
+**/.env*
 **/node_modules
-**/dist
 **/.next
-**/coverage
-**/npm-debug.log
+**/dist
+coverage
+k8s

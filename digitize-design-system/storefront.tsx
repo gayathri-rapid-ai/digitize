@@ -11,10 +11,11 @@ type Props = {
   headerAction?: any;
   navigation?: any;
   onAdd?: (product: StoreProduct) => void;
-  section?: 'home' | 'products';
+  section?: 'home' | 'collections' | 'products' | 'orders';
+  currencySymbol?: string;
 };
 
-export function StorefrontView({ storeName, logoUrl, products, theme, cartCount = 0, headerAction, navigation, onAdd, section = 'home' }: Props) {
+export function StorefrontView({ storeName, logoUrl, products, theme, cartCount = 0, headerAction, navigation, onAdd, section = 'home', currencySymbol = '$' }: Props) {
   const visibleLogo = logoUrl ?? (typeof document === 'undefined' ? null : document.documentElement.dataset.storeLogo ?? null);
   const colors = resolvedThemeStyle(theme);
   const shell = { ...colors, minHeight: '100vh', background: 'var(--store-bg)', color: 'var(--store-ink)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' } as any;
@@ -29,7 +30,7 @@ export function StorefrontView({ storeName, logoUrl, products, theme, cartCount 
       {products.map(product => <article key={product.id} style={{ minWidth: 0, border:'var(--card-border, 1px) solid var(--store-line)', borderRadius:'var(--card-radius, 8px)', padding:12 }}>
         {product.imageUrl ? <img src={product.imageUrl} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', background: 'var(--store-line)' }} /> : <div style={{ width: '100%', aspectRatio: '1', background: 'var(--store-line)' }} />}
         <h2 style={{ margin: '14px 0 5px', fontSize: 20 }}>{product.title}</h2><p style={{ minHeight: 24, margin: '0 0 12px', color: 'var(--store-muted)' }}>{product.description || ''}</p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}><strong>{product.price === undefined ? 'Contact for price' : `$${product.price}`}</strong>{onAdd && <button style={button} onClick={() => onAdd(product)}>Add to cart</button>}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}><strong>{product.price === undefined ? 'Contact for price' : `${currencySymbol}${product.price}`}</strong>{onAdd && <button style={button} onClick={() => onAdd(product)}>Add to cart</button>}</div>
       </article>)}
     </section>
   </div>;

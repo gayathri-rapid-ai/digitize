@@ -19,4 +19,21 @@ Change `APP_PORT` in `.env` if the port is in use.
 Set `PUBLIC_STORE_ID` (recommended) or `PUBLIC_STORE_SLUG` in `.env` to choose
 which store is displayed by the public UI. Without either value, the newest store
 is used for local development.
+
+To enable UPI payments, add Razorpay test keys as `RAZORPAY_KEY_ID` and
+`RAZORPAY_KEY_SECRET`, then set `RAZORPAY_WEBHOOK_SECRET`. Configure the webhook
+URL as `/api/public/payments/razorpay/webhook` and subscribe to
+`payment.captured` and `payment.failed`. Replace test keys with live keys only
+after completing Razorpay's go-live checks.
 Stop the stack with `docker compose down`; the PostgreSQL volume is preserved.
+
+## CI/CD and Amazon EKS
+
+GitHub Actions now validates every application and container image. The manually
+triggered deployment workflow publishes immutable images to Amazon ECR and
+updates DEV's Git state; Argo CD runs migrations and reconciles EKS. See
+[`docs/aws-cicd-setup.md`](docs/aws-cicd-setup.md) for the required AWS and
+GitHub configuration.
+
+For the complete DEV cluster bootstrap, follow
+[`docs/dev-eks-argocd-bootstrap.md`](docs/dev-eks-argocd-bootstrap.md).

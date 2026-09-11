@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, RawBodyRequest, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { StorefrontService } from './storefront.service';
 @ApiTags('Public API') @Controller('api/public')
@@ -14,4 +14,7 @@ export class StorefrontController {
   @Get('customers/me') @ApiBearerAuth() me(@Headers('authorization') token?:string) { return this.storefront.account(token); }
   @Get('orders') @ApiBearerAuth() orders(@Headers('authorization') token?:string) { return this.storefront.orders(token); }
   @Post('orders') @ApiBearerAuth() order(@Headers('authorization') token:string|undefined, @Body() body:{items:Array<{productId:string;quantity:number}>;shippingAddress?:Record<string,unknown>}) { return this.storefront.createOrder(token,body); }
+  @Post('payments/razorpay/order') @ApiBearerAuth() paymentOrder(@Headers('authorization') token:string|undefined, @Body() body:{items:Array<{productId:string;quantity:number}>;shippingAddress?:Record<string,unknown>}) { return this.storefront.createPaymentOrder(token,body); }
+  @Post('payments/razorpay/verify') @ApiBearerAuth() verifyPayment(@Headers('authorization') token:string|undefined, @Body() body:{orderId:string;razorpayOrderId:string;razorpayPaymentId:string;razorpaySignature:string}) { return this.storefront.verifyPayment(token,body); }
+  @Post('payments/razorpay/webhook') paymentWebhook(@Headers('x-razorpay-signature') signature:string|undefined, @Req() request:RawBodyRequest<any>) { return this.storefront.processPaymentWebhook(signature,request.rawBody); }
 }
